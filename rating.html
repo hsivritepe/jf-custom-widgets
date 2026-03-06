@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <!--
   JotForm Custom Widget: Short text + Date.
-  For two separate columns: add two form fields (hidden or visible) with labels "Short Text" and "Date".
-  Widget writes to those fields via setFieldsValueByLabel; widget column is sent empty to avoid overwriting.
+  With one widget you get ONE submission column. We send both values as: "shortText | date".
+  To get TWO columns: add two separate form fields to the form (e.g. "Single Line Text" and "Date"
+  questions), set their question labels to exactly "Short Text" and "Date". The widget will fill them.
 -->
 <html lang="en">
 <head>
@@ -116,7 +117,7 @@
 						encodedValue = getB64Value();
 					}
 
-					// Write to separate form fields so you get two columns (add fields with these labels in the form)
+					// Also try to fill separate form fields if you added them (labels "Short Text" and "Date")
 					var textFieldLabel = getSetting("textFieldLabel", "Short Text");
 					var dateFieldLabel = getSetting("dateFieldLabel", "Date");
 					if (typeof JFCustomWidget.setFieldsValueByLabel === "function") {
@@ -124,10 +125,10 @@
 						JFCustomWidget.setFieldsValueByLabel(dateFieldLabel, dateVal);
 					}
 
-					// Widget value: minimal so it does not overwrite the two columns
+					// Send both values in the one widget column so you always have the data
 					JFCustomWidget.sendSubmit({
-						valid: !!encodedValue && isValid,
-						value: ""
+						valid: isValid,
+						value: textVal + " | " + dateVal
 					});
 				});
 
