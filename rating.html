@@ -217,21 +217,17 @@
 					});
 
 					Promise.all(imagePromises).then(function(base64Array) {
+						// Send compact value: no base64 images in the main submission (they overwrote other values).
+						// Include image file names and count so you still have a record; add a separate File Upload field if you need the actual files.
+						var imageInfo = selectedFiles.map(function(item) { return item.file.name; });
 						var payload = {
 							title: title,
 							province: province,
 							provinceName: provinceSelect.options[provinceSelect.selectedIndex].text,
 							date: date,
-							images: base64Array
+							imageCount: base64Array.length,
+							imageNames: imageInfo
 						};
-
-						// Push each value to form fields with matching labels so submissions show separate columns.
-						// Add hidden (or visible) form fields with labels "Title", "Province", "Date" to get separate columns.
-						if (typeof JFCustomWidget.setFieldsValueByLabel === "function") {
-							JFCustomWidget.setFieldsValueByLabel("Title", title);
-							JFCustomWidget.setFieldsValueByLabel("Province", province);
-							JFCustomWidget.setFieldsValueByLabel("Date", date);
-						}
 
 						JFCustomWidget.sendSubmit({
 							valid: isValid,
