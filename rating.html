@@ -1,6 +1,22 @@
 <!DOCTYPE html>
+<!--
+  JotForm Custom Widget: Title, Province, Date, Images.
+  To add to JotForm:
+  1. Host this file on HTTPS (e.g. your server or GitHub Pages).
+  2. Go to JotForm → Widgets → Add New Widget.
+  3. Widget iFrame URL: your HTTPS URL to this file.
+  4. Widget Width: 560 (or more). Set height in form builder if needed.
+  5. Optional User Parameters (camelCase name / Human Readable Name / Field Type):
+     - titleLabel / Title field label / Text
+     - provinceLabel / Province field label / Text
+     - dateLabel / Date field label / Text
+     - imagesLabel / Images field label / Text
+     - titlePlaceholder / Title placeholder / Text
+-->
+<html lang="en">
 <head>
 	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
 	<style>
 		html, body {
@@ -76,12 +92,12 @@
 <body>
 	<div id="widget-container">
 		<div class="field-group">
-			<label for="titleInput">Title</label>
+			<label for="titleInput" id="titleLabel">Title</label>
 			<input type="text" id="titleInput" placeholder="Enter title">
 		</div>
 
 		<div class="field-group">
-			<label for="provinceSelect">Province</label>
+			<label for="provinceSelect" id="provinceLabel">Province</label>
 			<select id="provinceSelect">
 				<option value="">— Select province —</option>
 				<option value="AB">Alberta (AB)</option>
@@ -101,12 +117,12 @@
 		</div>
 
 		<div class="field-group">
-			<label for="dateInput">Date</label>
+			<label for="dateInput" id="dateLabel">Date</label>
 			<input type="date" id="dateInput">
 		</div>
 
 		<div class="field-group">
-			<label for="imageInput">Images</label>
+			<label for="imageInput" id="imagesLabel">Images</label>
 			<input type="file" id="imageInput" accept="image/*" multiple>
 			<div class="image-preview-list" id="imagePreviewList"></div>
 		</div>
@@ -191,8 +207,32 @@
 				});
 			}
 
+			function applyWidgetSettings() {
+				if (typeof JFCustomWidget.getWidgetSetting !== "function") return;
+				function set(id, settingKey, defaultVal) {
+					var el = document.getElementById(id);
+					if (!el) return;
+					var v = JFCustomWidget.getWidgetSetting(settingKey);
+					if (v !== undefined && v !== null && String(v).trim() !== "") el.textContent = v;
+					else if (defaultVal !== undefined) el.textContent = defaultVal;
+				}
+				function setPlaceholder(id, settingKey, defaultVal) {
+					var el = document.getElementById(id);
+					if (!el) return;
+					var v = JFCustomWidget.getWidgetSetting(settingKey);
+					if (v !== undefined && v !== null) el.placeholder = String(v);
+					else if (defaultVal !== undefined) el.placeholder = defaultVal;
+				}
+				set("titleLabel", "titleLabel", "Title");
+				set("provinceLabel", "provinceLabel", "Province");
+				set("dateLabel", "dateLabel", "Date");
+				set("imagesLabel", "imagesLabel", "Images");
+				setPlaceholder("titleInput", "titlePlaceholder", "Enter title");
+			}
+
 			JFCustomWidget.subscribe("ready", function() {
 				initElements();
+				applyWidgetSettings();
 
 				imageInput.addEventListener("change", onFileChange);
 

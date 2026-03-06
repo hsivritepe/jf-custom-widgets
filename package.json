@@ -1,0 +1,8 @@
+{
+  "name": "jf-custom-widgets",
+  "private": true,
+  "scripts": {
+    "start": "npx serve . -p 3000",
+    "dev": "npx live-server --port=3000 --open=/test-widget-settings.html"
+  }
+}
