@@ -2,29 +2,214 @@
 <head>
 	<meta charset="utf-8">
 	<script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
+	<style>
+		#widget-container {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+			max-width: 560px;
+			margin: 0 auto;
+			padding: 16px;
+		}
+		#widget-container label {
+			display: block;
+			font-weight: 600;
+			margin-bottom: 6px;
+			color: #333;
+		}
+		#widget-container input[type="text"],
+		#widget-container input[type="date"],
+		#widget-container select {
+			width: 100%;
+			padding: 10px 12px;
+			border: 1px solid #ccc;
+			border-radius: 6px;
+			font-size: 15px;
+			box-sizing: border-box;
+		}
+		#widget-container .field-group {
+			margin-bottom: 20px;
+		}
+		#widget-container input[type="file"] {
+			width: 100%;
+			padding: 8px 0;
+			font-size: 14px;
+		}
+		.image-preview-list {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 10px;
+			margin-top: 10px;
+		}
+		.image-preview-list img {
+			height: 80px;
+			width: auto;
+			object-fit: cover;
+			border-radius: 6px;
+			border: 1px solid #ddd;
+		}
+		.image-preview-list .preview-item {
+			position: relative;
+		}
+		.image-preview-list .remove-img {
+			position: absolute;
+			top: 4px;
+			right: 4px;
+			background: rgba(0,0,0,0.6);
+			color: #fff;
+			border: none;
+			border-radius: 4px;
+			width: 24px;
+			height: 24px;
+			cursor: pointer;
+			font-size: 14px;
+			line-height: 1;
+			padding: 0;
+		}
+		.image-preview-list .remove-img:hover {
+			background: #c00;
+		}
+	</style>
 </head>
 <body>
-	<div id="mywidget">
-		<input type="text" id="myTextInput">
+	<div id="widget-container">
+		<div class="field-group">
+			<label for="titleInput">Title</label>
+			<input type="text" id="titleInput" placeholder="Enter title">
+		</div>
+
+		<div class="field-group">
+			<label for="provinceSelect">Province</label>
+			<select id="provinceSelect">
+				<option value="">— Select province —</option>
+				<option value="AB">Alberta (AB)</option>
+				<option value="BC">British Columbia (BC)</option>
+				<option value="MB">Manitoba (MB)</option>
+				<option value="NB">New Brunswick (NB)</option>
+				<option value="NL">Newfoundland and Labrador (NL)</option>
+				<option value="NT">Northwest Territories (NT)</option>
+				<option value="NS">Nova Scotia (NS)</option>
+				<option value="NU">Nunavut (NU)</option>
+				<option value="ON">Ontario (ON)</option>
+				<option value="PE">Prince Edward Island (PE)</option>
+				<option value="QC">Quebec (QC)</option>
+				<option value="SK">Saskatchewan (SK)</option>
+				<option value="YT">Yukon (YT)</option>
+			</select>
+		</div>
+
+		<div class="field-group">
+			<label for="dateInput">Date</label>
+			<input type="date" id="dateInput">
+		</div>
+
+		<div class="field-group">
+			<label for="imageInput">Images</label>
+			<input type="file" id="imageInput" accept="image/*" multiple>
+			<div class="image-preview-list" id="imagePreviewList"></div>
+		</div>
 	</div>
+
 	<script type="text/javascript">
-		
-		JFCustomWidget.subscribe("ready", function(){
-			
-			var charLimit =parseInt(JFCustomWidget.getWidgetSetting('charLimit'));
-			var myTextInput = document.getElementById("myTextInput");
-			myTextInput ? myTextInput.maxLength = charLimit : "";
-			
-			JFCustomWidget.subscribe("submit", function(){
-				
-				var data = {
-					valid: true,
-					value: myTextInput.value
+		(function() {
+			var titleInput, provinceSelect, dateInput, imageInput, imagePreviewList;
+			var selectedFiles = [];
+
+			function initElements() {
+				titleInput = document.getElementById("titleInput");
+				provinceSelect = document.getElementById("provinceSelect");
+				dateInput = document.getElementById("dateInput");
+				imageInput = document.getElementById("imageInput");
+				imagePreviewList = document.getElementById("imagePreviewList");
+			}
+
+			function readFileAsDataURL(file) {
+				return new Promise(function(resolve, reject) {
+					var reader = new FileReader();
+					reader.onload = function() { resolve(reader.result); };
+					reader.onerror = reject;
+					reader.readAsDataURL(file);
+				});
+			}
+
+			function renderPreviews() {
+				imagePreviewList.innerHTML = "";
+				selectedFiles.forEach(function(item, index) {
+					var wrap = document.createElement("div");
+					wrap.className = "preview-item";
+					var img = document.createElement("img");
+					img.src = item.preview;
+					img.alt = item.file.name;
+					var btn = document.createElement("button");
+					btn.type = "button";
+					btn.className = "remove-img";
+					btn.textContent = "×";
+					btn.setAttribute("aria-label", "Remove image");
+					btn.onclick = function() {
+						selectedFiles.splice(index, 1);
+						renderPreviews();
+					};
+					wrap.appendChild(img);
+					wrap.appendChild(btn);
+					imagePreviewList.appendChild(wrap);
+				});
+			}
+
+			function onFileChange() {
+				var files = imageInput.files;
+				selectedFiles = [];
+				for (var i = 0; i < files.length; i++) {
+					var file = files[i];
+					if (!file.type.match(/^image\//)) continue;
+					selectedFiles.push({
+						file: file,
+						preview: URL.createObjectURL(file)
+					});
 				}
-				
-				JFCustomWidget.sendSubmit(data);
+				renderPreviews();
+			}
+
+			JFCustomWidget.subscribe("ready", function() {
+				initElements();
+
+				imageInput.addEventListener("change", onFileChange);
+
+				JFCustomWidget.subscribe("submit", function() {
+					var title = titleInput ? titleInput.value.trim() : "";
+					var province = provinceSelect ? provinceSelect.value : "";
+					var date = dateInput ? dateInput.value : "";
+
+					var isValid = true;
+					if (JFCustomWidget.isWidgetRequired && JFCustomWidget.isWidgetRequired()) {
+						if (!title) isValid = false;
+						if (!province) isValid = false;
+						if (!date) isValid = false;
+					}
+
+					var imagePromises = selectedFiles.map(function(item) {
+						return readFileAsDataURL(item.file);
+					});
+
+					Promise.all(imagePromises).then(function(base64Array) {
+						var payload = {
+							title: title,
+							province: province,
+							provinceName: provinceSelect.options[provinceSelect.selectedIndex].text,
+							date: date,
+							images: base64Array
+						};
+
+						JFCustomWidget.sendSubmit({
+							valid: isValid,
+							value: JSON.stringify(payload)
+						});
+					}).catch(function() {
+						JFCustomWidget.sendSubmit({
+							valid: false,
+							value: ""
+						});
+					});
+				});
 			});
-		});
+		})();
 	</script>
 </body>
 </html>
