@@ -1,15 +1,7 @@
 <!DOCTYPE html>
 <!--
-  JotForm Custom Widget: Short text + Date → separate submission columns.
-
-  TESTING – To get two columns in submissions:
-  1. In the form builder, add TWO extra fields (can be hidden):
-     - One field with label exactly: Short Text
-     - One field with label exactly: Date
-  2. Add this widget to the form (iframe URL = this file).
-  3. Submit: you should see "Short Text" and "Date" as separate columns with the values.
-
-  Optional User Parameters: textFieldLabel, dateFieldLabel (target labels); textLabel, dateLabel; textPlaceholder.
+  JotForm Custom Widget: Short text + Date.
+  Submit uses buildMetadata('htmltext', ...) + base64 payload (your way) for testing.
 -->
 <html lang="en">
 <head>
@@ -103,19 +95,32 @@
 						if (!dateVal) isValid = false;
 					}
 
-					// Target form field labels (must match form fields you add for separate columns)
-					var textFieldLabel = getSetting("textFieldLabel", "Short Text");
-					var dateFieldLabel = getSetting("dateFieldLabel", "Date");
-
-					if (typeof JFCustomWidget.setFieldsValueByLabel === "function") {
-						JFCustomWidget.setFieldsValueByLabel(textFieldLabel, textVal);
-						JFCustomWidget.setFieldsValueByLabel(dateFieldLabel, dateVal);
+					function getB64Value() {
+						var data = { shortText: textVal, date: dateVal };
+						var str = JSON.stringify(data);
+						try {
+							return btoa(unescape(encodeURIComponent(str)));
+						} catch (e) {
+							return btoa(str);
+						}
 					}
 
-					// Widget’s own value (minimal so it doesn’t overwrite other columns)
-					var payload = { valid: isValid, value: textVal + " | " + dateVal };
-					setTimeout(function() { JFCustomWidget.sendSubmit(payload); }, 0);
+					var encodedValue = null;
+					if (typeof JFCustomWidgetUtils !== "undefined" && typeof JFCustomWidgetUtils.buildMetadata === "function") {
+						encodedValue = JFCustomWidgetUtils.buildMetadata("htmltext", [{
+							name: "Data from table",
+							base64: getB64Value()
+						}]);
+					} else {
+						encodedValue = getB64Value();
+					}
+
+					JFCustomWidget.sendSubmit({
+						valid: !!encodedValue && isValid,
+						value: encodedValue
+					});
 				});
+
 			});
 		})();
 	</script>
