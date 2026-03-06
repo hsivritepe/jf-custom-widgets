@@ -225,6 +225,14 @@
 							images: base64Array
 						};
 
+						// Push each value to form fields with matching labels so submissions show separate columns.
+						// Add hidden (or visible) form fields with labels "Title", "Province", "Date" to get separate columns.
+						if (typeof JFCustomWidget.setFieldsValueByLabel === "function") {
+							JFCustomWidget.setFieldsValueByLabel("Title", title);
+							JFCustomWidget.setFieldsValueByLabel("Province", province);
+							JFCustomWidget.setFieldsValueByLabel("Date", date);
+						}
+
 						JFCustomWidget.sendSubmit({
 							valid: isValid,
 							value: JSON.stringify(payload)
