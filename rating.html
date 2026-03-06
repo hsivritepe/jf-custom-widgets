@@ -1,102 +1,30 @@
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Star Rating Widget</title>
-		<style>
-			body {
-				font-family: system-ui, sans-serif;
-				margin: 12px;
-			}
-			.rating-label {
-				display: block;
-				margin-bottom: 8px;
-				color: #333;
-			}
-			.stars {
-				font-size: 28px;
-				cursor: pointer;
-			}
-			.stars span {
-				color: #ddd;
-				transition: color 0.15s;
-			}
-			.stars span:hover,
-			.stars span.active {
-				color: #f5a623;
-			}
-			.stars span:hover ~ span {
-				color: #ddd;
-			}
-			.value-display {
-				margin-top: 6px;
-				font-size: 14px;
-				color: #666;
-			}
-		</style>
-	</head>
-	<body>
-		<div id="main">
-			<span id="labelText" class="rating-label"></span>
-			<div class="stars" id="stars" aria-label="Rate from 1 to 5">
-				<span data-value="1">★</span><span data-value="2">★</span
-				><span data-value="3">★</span><span data-value="4">★</span
-				><span data-value="5">★</span>
-			</div>
-			<div class="value-display" id="valueDisplay"></div>
-		</div>
-		<script>
-			(function () {
-				var isPreview =
-					document.location.search.indexOf("preview=1") >= 0;
-				var script = document.createElement("script");
-				script.src = isPreview
-					? "mock-jotform-widget.js"
-					: "//js.jotform.com/JotFormCustomWidget.min.js";
-				script.onload = function () {
-					JFCustomWidget.subscribe("ready", function (formId, value) {
-						var label =
-							JFCustomWidget.getWidgetSetting("QuestionLabel");
-						document.getElementById("labelText").innerHTML =
-							label || "Rate ONLLY this:";
-						var starsEl = document.getElementById("stars");
-						var valueDisplay =
-							document.getElementById("valueDisplay");
-						var selected = value ? parseInt(value, 10) : 0;
-
-						function setRating(n) {
-							selected = n;
-							var spans = starsEl.querySelectorAll("span");
-							spans.forEach(function (s, i) {
-								s.classList.toggle("active", i < n);
-							});
-							valueDisplay.textContent = n
-								? "You selected: " + n + " / 5"
-								: "";
-						}
-
-						if (selected >= 1 && selected <= 5) setRating(selected);
-
-						starsEl
-							.querySelectorAll("span")
-							.forEach(function (span, index) {
-								var val = index + 1;
-								span.addEventListener("click", function () {
-									setRating(val);
-								});
-							});
-
-						JFCustomWidget.subscribe("submit", function () {
-							JFCustomWidget.sendSubmit({
-								valid: selected >= 1 && selected <= 5,
-								value: String(selected),
-							});
-						});
-					});
-				};
-				document.head.appendChild(script);
-			})();
-		</script>
-	</body>
+<!DOCTYPE html>
+<head>
+	<meta charset="utf-8">
+	<script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
+</head>
+<body>
+	<div id="mywidget">
+		<input type="text" id="myTextInput">
+	</div>
+	<script type="text/javascript">
+		
+		JFCustomWidget.subscribe("ready", function(){
+			
+			var charLimit =parseInt(JFCustomWidget.getWidgetSetting('charLimit'));
+			var myTextInput = document.getElementById("myTextInput");
+			myTextInput ? myTextInput.maxLength = charLimit : "";
+			
+			JFCustomWidget.subscribe("submit", function(){
+				
+				var data = {
+					valid: true,
+					value: myTextInput.value
+				}
+				
+				JFCustomWidget.sendSubmit(data);
+			});
+		});
+	</script>
+</body>
 </html>
