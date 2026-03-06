@@ -1,166 +1,247 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>JotForm Widget Settings Test</title>
-	<script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
-	<style>
-		body {
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-			max-width: 720px;
-			margin: 0 auto;
-			padding: 20px;
-			background: #f5f5f5;
-		}
-		h1 { font-size: 1.25rem; margin-top: 0; }
-		.section {
-			background: #fff;
-			border-radius: 8px;
-			padding: 16px;
-			margin-bottom: 16px;
-			box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-		}
-		.section h2 {
-			font-size: 0.9rem;
-			margin: 0 0 10px 0;
-			color: #555;
-		 text-transform: uppercase;
-			letter-spacing: 0.05em;
-		}
-		pre {
-			background: #1e1e1e;
-			color: #d4d4d4;
-			padding: 12px;
-			border-radius: 6px;
-			overflow-x: auto;
-			font-size: 13px;
-			margin: 0;
-		}
-		table { width: 100%; border-collapse: collapse; font-size: 14px; }
-		th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #eee; }
-		th { color: #666; font-weight: 600; }
-		.warn { background: #fff3cd; color: #856404; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 14px; }
-		.ok { background: #d4edda; color: #155724; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 14px; }
-	</style>
-</head>
-<body>
-	<div class="section">
-		<h1>JotForm Widget Settings Test</h1>
-		<p id="context-msg">Loading…</p>
-	</div>
-
-	<div class="section">
-		<h2>getWidgetSettings() — all settings</h2>
-		<pre id="all-settings">(run inside a JotForm widget to see data)</pre>
-	</div>
-
-	<div class="section">
-		<h2>getWidgetSetting(key) — each key</h2>
-		<table>
-			<thead>
-				<tr><th>Key</th><th>Value</th><th>Type</th></tr>
-			</thead>
-			<tbody id="per-key-table">
-				<tr><td colspan="3">(no keys or not in widget)</td></tr>
-			</tbody>
-		</table>
-	</div>
-
-	<script>
-	(function() {
-		var contextMsg = document.getElementById("context-msg");
-		var allSettingsPre = document.getElementById("all-settings");
-		var tableBody = document.getElementById("per-key-table");
-
-		function showAllSettings() {
-			if (typeof JFCustomWidget === "undefined") {
-				contextMsg.innerHTML = '<span class="warn">JFCustomWidget is not defined. Open this page inside a JotForm form (as the widget iframe URL) to see settings.</span>';
-				allSettingsPre.textContent = "N/A (not in JotForm)";
-				return;
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>JotForm Widget Settings Test</title>
+		<script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
+		x`
+		<style>
+			body {
+				font-family:
+					-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+					sans-serif;
+				max-width: 720px;
+				margin: 0 auto;
+				padding: 20px;
+				background: #f5f5f5;
 			}
-
-			contextMsg.innerHTML = '<span class="ok">Running inside JotForm. Widget API is available.</span>';
-
-			var all = null;
-			try {
-				if (typeof JFCustomWidget.getWidgetSettings === "function") {
-					all = JFCustomWidget.getWidgetSettings();
-				}
-			} catch (e) {
-				all = { error: String(e) };
+			h1 {
+				font-size: 1.25rem;
+				margin-top: 0;
 			}
-
-			if (all === undefined || all === null) {
-				allSettingsPre.textContent = "getWidgetSettings() returned: " + String(all);
-			} else if (typeof all === "object") {
-				allSettingsPre.textContent = JSON.stringify(all, null, 2);
-			} else {
-				allSettingsPre.textContent = String(all);
+			.section {
+				background: #fff;
+				border-radius: 8px;
+				padding: 16px;
+				margin-bottom: 16px;
+				box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 			}
-
-			// Build list of keys to call getWidgetSetting(key) for
-			var keys = [];
-			if (all && typeof all === "object" && !all.error) {
-				keys = Object.keys(all);
+			.section h2 {
+				font-size: 0.9rem;
+				margin: 0 0 10px 0;
+				color: #555;
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
 			}
-			// If no keys from getWidgetSettings, try some common parameter names
-			if (keys.length === 0) {
-				keys = ["charLimit", "titleFieldLabel", "provinceFieldLabel", "dateFieldLabel", "defaultValue", "placeholder"];
+			pre {
+				background: #1e1e1e;
+				color: #d4d4d4;
+				padding: 12px;
+				border-radius: 6px;
+				overflow-x: auto;
+				font-size: 13px;
+				margin: 0;
 			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 14px;
+			}
+			th,
+			td {
+				text-align: left;
+				padding: 8px 12px;
+				border-bottom: 1px solid #eee;
+			}
+			th {
+				color: #666;
+				font-weight: 600;
+			}
+			.warn {
+				background: #fff3cd;
+				color: #856404;
+				padding: 10px;
+				border-radius: 6px;
+				margin-bottom: 12px;
+				font-size: 14px;
+			}
+			.ok {
+				background: #d4edda;
+				color: #155724;
+				padding: 10px;
+				border-radius: 6px;
+				margin-bottom: 12px;
+				font-size: 14px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="section">
+			<h1>JotForm Widget Settings Test</h1>
+			<p id="context-msg">Loading…</p>
+		</div>
 
-			tableBody.innerHTML = "";
-			keys.forEach(function(key) {
-				var val;
-				try {
-					if (typeof JFCustomWidget.getWidgetSetting === "function") {
-						val = JFCustomWidget.getWidgetSetting(key);
-					} else {
-						val = "(no getWidgetSetting)";
+		<div class="section">
+			<h2>getWidgetSettings() — all settings</h2>
+			<pre id="all-settings">
+(run inside a JotForm widget to see data)</pre
+			>
+		</div>
+
+		<div class="section">
+			<h2>getWidgetSetting(key) — each key</h2>
+			<table>
+				<thead>
+					<tr>
+						<th>Key</th>
+						<th>Value</th>
+						<th>Type</th>
+					</tr>
+				</thead>
+				<tbody id="per-key-table">
+					<tr>
+						<td colspan="3">(no keys or not in widget)</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<script>
+			(function () {
+				var contextMsg = document.getElementById("context-msg");
+				var allSettingsPre = document.getElementById("all-settings");
+				var tableBody = document.getElementById("per-key-table");
+
+				function showAllSettings() {
+					if (typeof JFCustomWidget === "undefined") {
+						contextMsg.innerHTML =
+							'<span class="warn">JFCustomWidget is not defined. Open this page inside a JotForm form (as the widget iframe URL) to see settings.</span>';
+						allSettingsPre.textContent = "N/A (not in JotForm)";
+						return;
 					}
-				} catch (e) {
-					val = "Error: " + e.message;
+
+					contextMsg.innerHTML =
+						'<span class="ok">Running inside JotForm. Widget API is available.</span>';
+
+					var all = null;
+					try {
+						if (
+							typeof JFCustomWidget.getWidgetSettings ===
+							"function"
+						) {
+							all = JFCustomWidget.getWidgetSettings();
+						}
+					} catch (e) {
+						all = { error: String(e) };
+					}
+
+					if (all === undefined || all === null) {
+						allSettingsPre.textContent =
+							"getWidgetSettings() returned: " + String(all);
+					} else if (typeof all === "object") {
+						allSettingsPre.textContent = JSON.stringify(
+							all,
+							null,
+							2,
+						);
+					} else {
+						allSettingsPre.textContent = String(all);
+					}
+
+					// Build list of keys to call getWidgetSetting(key) for
+					var keys = [];
+					if (all && typeof all === "object" && !all.error) {
+						keys = Object.keys(all);
+					}
+					// If no keys from getWidgetSettings, try some common parameter names
+					if (keys.length === 0) {
+						keys = [
+							"charLimit",
+							"titleFieldLabel",
+							"provinceFieldLabel",
+							"dateFieldLabel",
+							"defaultValue",
+							"placeholder",
+						];
+					}
+
+					tableBody.innerHTML = "";
+					keys.forEach(function (key) {
+						var val;
+						try {
+							if (
+								typeof JFCustomWidget.getWidgetSetting ===
+								"function"
+							) {
+								val = JFCustomWidget.getWidgetSetting(key);
+							} else {
+								val = "(no getWidgetSetting)";
+							}
+						} catch (e) {
+							val = "Error: " + e.message;
+						}
+						var type = val === null ? "null" : typeof val;
+						var display =
+							val === undefined
+								? "(undefined)"
+								: typeof val === "object"
+									? JSON.stringify(val)
+									: String(val);
+						if (display.length > 80)
+							display = display.slice(0, 80) + "…";
+						var row =
+							"<tr><td><code>" +
+							escapeHtml(key) +
+							"</code></td><td>" +
+							escapeHtml(display) +
+							"</td><td>" +
+							escapeHtml(type) +
+							"</td></tr>";
+						tableBody.innerHTML += row;
+					});
+
+					if (keys.length === 0) {
+						tableBody.innerHTML =
+							"<tr><td colspan='3'>No keys returned from getWidgetSettings(); add User Parameters to your widget in JotForm to see keys here.</td></tr>";
+					}
 				}
-				var type = val === null ? "null" : typeof val;
-				var display = val === undefined ? "(undefined)" : (typeof val === "object" ? JSON.stringify(val) : String(val));
-				if (display.length > 80) display = display.slice(0, 80) + "…";
-				var row = "<tr><td><code>" + escapeHtml(key) + "</code></td><td>" + escapeHtml(display) + "</td><td>" + escapeHtml(type) + "</td></tr>";
-				tableBody.innerHTML += row;
-			});
 
-			if (keys.length === 0) {
-				tableBody.innerHTML = "<tr><td colspan='3'>No keys returned from getWidgetSettings(); add User Parameters to your widget in JotForm to see keys here.</td></tr>";
-			}
-		}
-
-		function escapeHtml(s) {
-			var div = document.createElement("div");
-			div.textContent = s;
-			return div.innerHTML;
-		}
-
-		function runWhenReady() {
-			showAllSettings();
-		}
-
-		if (typeof JFCustomWidget !== "undefined" && typeof JFCustomWidget.subscribe === "function") {
-			JFCustomWidget.subscribe("ready", runWhenReady);
-			// When not embedded in JotForm, "ready" never fires — run after a short delay so the page still updates
-			setTimeout(function() {
-				if (contextMsg.textContent.indexOf("Loading") !== -1) {
-					runWhenReady();
-					contextMsg.innerHTML = '<span class="warn">Not inside a JotForm form — use this page as the widget iframe URL in the form builder to see real settings. Results below show API check.</span>';
+				function escapeHtml(s) {
+					var div = document.createElement("div");
+					div.textContent = s;
+					return div.innerHTML;
 				}
-			}, 1500);
-		} else {
-			// Standalone: run after load
-			if (document.readyState === "loading") {
-				document.addEventListener("DOMContentLoaded", showAllSettings);
-			} else {
-				showAllSettings();
-			}
-		}
-	})();
-	</script>
-</body>
+
+				function runWhenReady() {
+					showAllSettings();
+				}
+
+				if (
+					typeof JFCustomWidget !== "undefined" &&
+					typeof JFCustomWidget.subscribe === "function"
+				) {
+					JFCustomWidget.subscribe("ready", runWhenReady);
+					// When not embedded in JotForm, "ready" never fires — run after a short delay so the page still updates
+					setTimeout(function () {
+						if (contextMsg.textContent.indexOf("Loading") !== -1) {
+							runWhenReady();
+							contextMsg.innerHTML =
+								'<span class="warn">Not inside a JotForm form — use this page as the widget iframe URL in the form builder to see real settings. Results below show API check.</span>';
+						}
+					}, 1500);
+				} else {
+					// Standalone: run after load
+					if (document.readyState === "loading") {
+						document.addEventListener(
+							"DOMContentLoaded",
+							showAllSettings,
+						);
+					} else {
+						showAllSettings();
+					}
+				}
+			})();
+		</script>
+	</body>
 </html>

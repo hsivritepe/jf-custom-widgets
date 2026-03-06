@@ -1,17 +1,15 @@
 <!DOCTYPE html>
 <!--
-  JotForm Custom Widget: Title, Province, Date, Images.
-  To add to JotForm:
-  1. Host this file on HTTPS (e.g. your server or GitHub Pages).
-  2. Go to JotForm → Widgets → Add New Widget.
-  3. Widget iFrame URL: your HTTPS URL to this file.
-  4. Widget Width: 560 (or more). Set height in form builder if needed.
-  5. Optional User Parameters (camelCase name / Human Readable Name / Field Type):
-     - titleLabel / Title field label / Text
-     - provinceLabel / Province field label / Text
-     - dateLabel / Date field label / Text
-     - imagesLabel / Images field label / Text
-     - titlePlaceholder / Title placeholder / Text
+  JotForm Custom Widget: Short text + Date → separate submission columns.
+
+  TESTING – To get two columns in submissions:
+  1. In the form builder, add TWO extra fields (can be hidden):
+     - One field with label exactly: Short Text
+     - One field with label exactly: Date
+  2. Add this widget to the form (iframe URL = this file).
+  3. Submit: you should see "Short Text" and "Date" as separate columns with the values.
+
+  Optional User Parameters: textFieldLabel, dateFieldLabel (target labels); textLabel, dateLabel; textPlaceholder.
 -->
 <html lang="en">
 <head>
@@ -19,12 +17,9 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
 	<style>
-		html, body {
-			margin: 0;
-			min-height: 480px;
-		}
+		html, body { margin: 0; min-height: 200px; }
 		#widget-container {
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 			max-width: 560px;
 			margin: 0 auto;
 			padding: 16px;
@@ -36,8 +31,7 @@
 			color: #333;
 		}
 		#widget-container input[type="text"],
-		#widget-container input[type="date"],
-		#widget-container select {
+		#widget-container input[type="date"] {
 			width: 100%;
 			padding: 10px 12px;
 			border: 1px solid #ccc;
@@ -45,240 +39,82 @@
 			font-size: 15px;
 			box-sizing: border-box;
 		}
-		#widget-container .field-group {
-			margin-bottom: 20px;
-		}
-		#widget-container input[type="file"] {
-			width: 100%;
-			padding: 8px 0;
-			font-size: 14px;
-		}
-		.image-preview-list {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 10px;
-			margin-top: 10px;
-		}
-		.image-preview-list img {
-			height: 80px;
-			width: auto;
-			object-fit: cover;
-			border-radius: 6px;
-			border: 1px solid #ddd;
-		}
-		.image-preview-list .preview-item {
-			position: relative;
-		}
-		.image-preview-list .remove-img {
-			position: absolute;
-			top: 4px;
-			right: 4px;
-			background: rgba(0,0,0,0.6);
-			color: #fff;
-			border: none;
-			border-radius: 4px;
-			width: 24px;
-			height: 24px;
-			cursor: pointer;
-			font-size: 14px;
-			line-height: 1;
-			padding: 0;
-		}
-		.image-preview-list .remove-img:hover {
-			background: #c00;
-		}
+		#widget-container .field-group { margin-bottom: 20px; }
 	</style>
 </head>
 <body>
 	<div id="widget-container">
 		<div class="field-group">
-			<label for="titleInput" id="titleLabel">Title</label>
-			<input type="text" id="titleInput" placeholder="Enter title">
+			<label for="textInput" id="textLabel">Short Text</label>
+			<input type="text" id="textInput" placeholder="">
 		</div>
-
-		<div class="field-group">
-			<label for="provinceSelect" id="provinceLabel">Province</label>
-			<select id="provinceSelect">
-				<option value="">— Select province —</option>
-				<option value="AB">Alberta (AB)</option>
-				<option value="BC">British Columbia (BC)</option>
-				<option value="MB">Manitoba (MB)</option>
-				<option value="NB">New Brunswick (NB)</option>
-				<option value="NL">Newfoundland and Labrador (NL)</option>
-				<option value="NT">Northwest Territories (NT)</option>
-				<option value="NS">Nova Scotia (NS)</option>
-				<option value="NU">Nunavut (NU)</option>
-				<option value="ON">Ontario (ON)</option>
-				<option value="PE">Prince Edward Island (PE)</option>
-				<option value="QC">Quebec (QC)</option>
-				<option value="SK">Saskatchewan (SK)</option>
-				<option value="YT">Yukon (YT)</option>
-			</select>
-		</div>
-
 		<div class="field-group">
 			<label for="dateInput" id="dateLabel">Date</label>
 			<input type="date" id="dateInput">
-		</div>
-
-		<div class="field-group">
-			<label for="imageInput" id="imagesLabel">Images</label>
-			<input type="file" id="imageInput" accept="image/*" multiple>
-			<div class="image-preview-list" id="imagePreviewList"></div>
 		</div>
 	</div>
 
 	<script type="text/javascript">
 		(function() {
-			var titleInput, provinceSelect, dateInput, imageInput, imagePreviewList;
-			var selectedFiles = [];
+			var textInput, dateInput;
 
 			function initElements() {
-				titleInput = document.getElementById("titleInput");
-				provinceSelect = document.getElementById("provinceSelect");
+				textInput = document.getElementById("textInput");
 				dateInput = document.getElementById("dateInput");
-				imageInput = document.getElementById("imageInput");
-				imagePreviewList = document.getElementById("imagePreviewList");
 			}
 
-			function readFileAsDataURL(file) {
-				return new Promise(function(resolve, reject) {
-					var reader = new FileReader();
-					reader.onload = function() { resolve(reader.result); };
-					reader.onerror = reject;
-					reader.readAsDataURL(file);
-				});
+			function getSetting(key, defaultVal) {
+				if (typeof JFCustomWidget.getWidgetSetting !== "function") return defaultVal;
+				var v = JFCustomWidget.getWidgetSetting(key);
+				if (v === undefined || v === null || String(v).trim() === "") return defaultVal;
+				return String(v).trim();
 			}
 
-			function renderPreviews() {
-				imagePreviewList.innerHTML = "";
-				selectedFiles.forEach(function(item, index) {
-					var wrap = document.createElement("div");
-					wrap.className = "preview-item";
-					var img = document.createElement("img");
-					img.src = item.preview;
-					img.alt = item.file.name;
-					var btn = document.createElement("button");
-					btn.type = "button";
-					btn.className = "remove-img";
-					btn.textContent = "×";
-					btn.setAttribute("aria-label", "Remove image");
-					btn.onclick = function() {
-						selectedFiles.splice(index, 1);
-						renderPreviews();
-						updateFrameHeight();
-					};
-					wrap.appendChild(img);
-					wrap.appendChild(btn);
-					imagePreviewList.appendChild(wrap);
-				});
-			}
-
-			function onFileChange() {
-				var files = imageInput.files;
-				selectedFiles = [];
-				for (var i = 0; i < files.length; i++) {
-					var file = files[i];
-					if (!file.type.match(/^image\//)) continue;
-					selectedFiles.push({
-						file: file,
-						preview: URL.createObjectURL(file)
-					});
-				}
-				renderPreviews();
-				updateFrameHeight();
+			function applyWidgetSettings() {
+				var textLbl = document.getElementById("textLabel");
+				var dateLbl = document.getElementById("dateLabel");
+				if (textLbl) textLbl.textContent = getSetting("textLabel", "Short Text");
+				if (dateLbl) dateLbl.textContent = getSetting("dateLabel", "Date");
+				if (textInput) textInput.placeholder = getSetting("textPlaceholder", "") || "Enter text";
 			}
 
 			function updateFrameHeight() {
 				function doResize() {
-					var height = Math.max(480, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
+					var height = Math.max(200, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
 					var width = (document.getElementById("widget-container") && document.getElementById("widget-container").offsetWidth) || 560;
-					if (typeof JFCustomWidget.setFrameSize === "function") {
-						JFCustomWidget.setFrameSize(width, height);
-					}
-					if (typeof JFCustomWidget.requestFrameResize === "function") {
-						JFCustomWidget.requestFrameResize();
-					}
+					if (typeof JFCustomWidget.setFrameSize === "function") JFCustomWidget.setFrameSize(width, height);
+					if (typeof JFCustomWidget.requestFrameResize === "function") JFCustomWidget.requestFrameResize();
 				}
-				requestAnimationFrame(function() {
-					doResize();
-					setTimeout(doResize, 50);
-					setTimeout(doResize, 200);
-				});
-			}
-
-			function applyWidgetSettings() {
-				if (typeof JFCustomWidget.getWidgetSetting !== "function") return;
-				function set(id, settingKey, defaultVal) {
-					var el = document.getElementById(id);
-					if (!el) return;
-					var v = JFCustomWidget.getWidgetSetting(settingKey);
-					if (v !== undefined && v !== null && String(v).trim() !== "") el.textContent = v;
-					else if (defaultVal !== undefined) el.textContent = defaultVal;
-				}
-				function setPlaceholder(id, settingKey, defaultVal) {
-					var el = document.getElementById(id);
-					if (!el) return;
-					var v = JFCustomWidget.getWidgetSetting(settingKey);
-					if (v !== undefined && v !== null) el.placeholder = String(v);
-					else if (defaultVal !== undefined) el.placeholder = defaultVal;
-				}
-				set("titleLabel", "titleLabel", "Title");
-				set("provinceLabel", "provinceLabel", "Province");
-				set("dateLabel", "dateLabel", "Date");
-				set("imagesLabel", "imagesLabel", "Images");
-				setPlaceholder("titleInput", "titlePlaceholder", "Enter title");
+				requestAnimationFrame(function() { doResize(); setTimeout(doResize, 100); });
 			}
 
 			JFCustomWidget.subscribe("ready", function() {
 				initElements();
 				applyWidgetSettings();
-
-				imageInput.addEventListener("change", onFileChange);
-
 				updateFrameHeight();
-				setTimeout(updateFrameHeight, 100);
-				setTimeout(updateFrameHeight, 400);
 
 				JFCustomWidget.subscribe("submit", function() {
-					var title = titleInput ? titleInput.value.trim() : "";
-					var province = provinceSelect ? provinceSelect.value : "";
-					var date = dateInput ? dateInput.value : "";
+					var textVal = textInput ? textInput.value.trim() : "";
+					var dateVal = dateInput ? dateInput.value : "";
 
 					var isValid = true;
 					if (JFCustomWidget.isWidgetRequired && JFCustomWidget.isWidgetRequired()) {
-						if (!title) isValid = false;
-						if (!province) isValid = false;
-						if (!date) isValid = false;
+						if (!textVal) isValid = false;
+						if (!dateVal) isValid = false;
 					}
 
-					var imagePromises = selectedFiles.map(function(item) {
-						return readFileAsDataURL(item.file);
-					});
+					// Target form field labels (must match form fields you add for separate columns)
+					var textFieldLabel = getSetting("textFieldLabel", "Short Text");
+					var dateFieldLabel = getSetting("dateFieldLabel", "Date");
 
-					Promise.all(imagePromises).then(function(base64Array) {
-						// Send compact value: no base64 images in the main submission (they overwrote other values).
-						// Include image file names and count so you still have a record; add a separate File Upload field if you need the actual files.
-						var imageInfo = selectedFiles.map(function(item) { return item.file.name; });
-						var payload = {
-							title: title,
-							province: province,
-							provinceName: provinceSelect.options[provinceSelect.selectedIndex].text,
-							date: date,
-							imageCount: base64Array.length,
-							imageNames: imageInfo
-						};
+					if (typeof JFCustomWidget.setFieldsValueByLabel === "function") {
+						JFCustomWidget.setFieldsValueByLabel(textFieldLabel, textVal);
+						JFCustomWidget.setFieldsValueByLabel(dateFieldLabel, dateVal);
+					}
 
-						JFCustomWidget.sendSubmit({
-							valid: isValid,
-							value: JSON.stringify(payload)
-						});
-					}).catch(function() {
-						JFCustomWidget.sendSubmit({
-							valid: false,
-							value: ""
-						});
-					});
+					// Widget’s own value (minimal so it doesn’t overwrite other columns)
+					var payload = { valid: isValid, value: textVal + " | " + dateVal };
+					setTimeout(function() { JFCustomWidget.sendSubmit(payload); }, 0);
 				});
 			});
 		})();
