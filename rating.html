@@ -146,6 +146,7 @@
 					btn.onclick = function() {
 						selectedFiles.splice(index, 1);
 						renderPreviews();
+						updateFrameHeight();
 					};
 					wrap.appendChild(img);
 					wrap.appendChild(btn);
@@ -165,12 +166,25 @@
 					});
 				}
 				renderPreviews();
+				updateFrameHeight();
+			}
+
+			function updateFrameHeight() {
+				requestAnimationFrame(function() {
+					var height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+					var width = (document.getElementById("widget-container") && document.getElementById("widget-container").offsetWidth) || 560;
+					if (typeof JFCustomWidget.setFrameSize === "function") {
+						JFCustomWidget.setFrameSize(width, height);
+					}
+				});
 			}
 
 			JFCustomWidget.subscribe("ready", function() {
 				initElements();
 
 				imageInput.addEventListener("change", onFileChange);
+
+				updateFrameHeight();
 
 				JFCustomWidget.subscribe("submit", function() {
 					var title = titleInput ? titleInput.value.trim() : "";
