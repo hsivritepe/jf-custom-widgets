@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <!--
   JotForm Custom Widget: Short text + Date.
-  Submit uses buildMetadata('htmltext', ...) + base64 payload (your way) for testing.
+  For two separate columns: add two form fields (hidden or visible) with labels "Short Text" and "Date".
+  Widget writes to those fields via setFieldsValueByLabel; widget column is sent empty to avoid overwriting.
 -->
 <html lang="en">
 <head>
@@ -115,9 +116,18 @@
 						encodedValue = getB64Value();
 					}
 
+					// Write to separate form fields so you get two columns (add fields with these labels in the form)
+					var textFieldLabel = getSetting("textFieldLabel", "Short Text");
+					var dateFieldLabel = getSetting("dateFieldLabel", "Date");
+					if (typeof JFCustomWidget.setFieldsValueByLabel === "function") {
+						JFCustomWidget.setFieldsValueByLabel(textFieldLabel, textVal);
+						JFCustomWidget.setFieldsValueByLabel(dateFieldLabel, dateVal);
+					}
+
+					// Widget value: minimal so it does not overwrite the two columns
 					JFCustomWidget.sendSubmit({
 						valid: !!encodedValue && isValid,
-						value: encodedValue
+						value: ""
 					});
 				});
 
