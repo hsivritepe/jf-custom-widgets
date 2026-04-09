@@ -1,0 +1,236 @@
+<!doctype html>
+<html>
+	<head>
+		<script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
+		<meta http-equiv="cache-control" content="no-cache" />
+		<meta http-equiv="expires" content="0" />
+		<meta http-equiv="pragma" content="no-cache" />
+	</head>
+	<style></style>
+	<body>
+		<div id="reviewArea"></div>
+		<script type="text/javascript">
+			function tableExampleForCleaningDepot() {
+				this.init = init;
+				this.getData = getData;
+
+				var hiddenEmailValue = "";
+				var effectiveFieldId = "";
+				var effectiveFieldName = "";
+				var legacyLabelAsName = "hiddenemail";
+
+				function getQueryParam(key) {
+					if (typeof JFCustomWidget.getQueryString !== "function") return "";
+					var v = JFCustomWidget.getQueryString(key);
+					return v == null ? "" : String(v).trim();
+				}
+
+				function getSetting(key) {
+					if (typeof JFCustomWidget.getWidgetSetting !== "function") return "";
+					var v = JFCustomWidget.getWidgetSetting(key);
+					return v == null ? "" : String(v).trim();
+				}
+
+				function normalizeFieldEntry(entry) {
+					if (entry == null) return "";
+					if (typeof entry === "string") return entry;
+					if (typeof entry === "number" || typeof entry === "boolean") return String(entry);
+					if (typeof entry === "object") {
+						if ("value" in entry && entry.value != null) return String(entry.value);
+						if ("text" in entry && entry.text != null) return String(entry.text);
+					}
+					return "";
+				}
+
+				function firstNonemptyQField(payload) {
+					if (!payload || typeof payload !== "object") return "";
+					var keys = Object.keys(payload).filter(function (k) {
+						return /^q\d+_/.test(k);
+					});
+					keys.sort();
+					for (var i = 0; i < keys.length; i++) {
+						var v = normalizeFieldEntry(payload[keys[i]]);
+						if (v !== "") return v;
+					}
+					return "";
+				}
+
+				function extractFromPayloadMap(payload, nameHint, idHint) {
+					if (!payload || typeof payload !== "object") return "";
+
+					if (nameHint && payload[nameHint] != null) {
+						var a = normalizeFieldEntry(payload[nameHint]);
+						if (a !== "") return a;
+					}
+					if (idHint) {
+						var idStr = String(idHint);
+						var tryKeys = ["input_" + idStr, idStr];
+						for (var j = 0; j < tryKeys.length; j++) {
+							if (payload[tryKeys[j]] != null) {
+								var b = normalizeFieldEntry(payload[tryKeys[j]]);
+								if (b !== "") return b;
+							}
+						}
+					}
+					for (var k in payload) {
+						if (!Object.prototype.hasOwnProperty.call(payload, k)) continue;
+						var c = normalizeFieldEntry(payload[k]);
+						if (c !== "") return c;
+					}
+					return "";
+				}
+
+				function parseCapturePayload(res, nameHint, idHint) {
+					if (res == null) return "";
+
+					if (typeof res === "string") {
+						try {
+							var j = JSON.parse(res);
+							if (j && typeof j === "object") return parseCapturePayload(j, nameHint, idHint);
+						} catch (e) {}
+						return normalizeFieldEntry(res);
+					}
+
+					if (typeof res !== "object") return "";
+
+					if ("value" in res && res.value != null && typeof res.fields === "undefined") {
+						var flat = normalizeFieldEntry(res.value);
+						if (flat !== "") return flat;
+					}
+
+					var payload = res.data;
+					if (typeof payload === "string") {
+						try {
+							payload = JSON.parse(payload);
+						} catch (e) {
+							payload = null;
+						}
+					}
+					if (payload && typeof payload === "object") {
+						var v1 = extractFromPayloadMap(payload, nameHint, idHint);
+						if (v1 !== "") return v1;
+						var vQ = firstNonemptyQField(payload);
+						if (vQ !== "") return vQ;
+					}
+
+					var v2 = extractFromPayloadMap(res, nameHint, idHint);
+					if (v2 !== "") return v2;
+
+					if (Array.isArray(res.fields)) {
+						for (var i = 0; i < res.fields.length; i++) {
+							var fe = normalizeFieldEntry(res.fields[i]);
+							if (fe !== "") return fe;
+						}
+					}
+
+					return "";
+				}
+
+				function updateReviewArea() {
+					var reviewArea = document.getElementById("reviewArea");
+					if (!reviewArea) return;
+					reviewArea.textContent = hiddenEmailValue
+						? "Hidden Email: " + hiddenEmailValue
+						: "Hidden Email: (empty)";
+				}
+
+				function applyResponse(res) {
+					var nameHint = effectiveFieldName || legacyLabelAsName;
+					var extracted = parseCapturePayload(res, nameHint, effectiveFieldId);
+					if (extracted !== "") {
+						hiddenEmailValue = extracted;
+						updateReviewArea();
+					}
+					console.log("getsetdata2 capture raw:", res, "→", extracted);
+				}
+
+				function fetchFieldValue() {
+					var nameHint = effectiveFieldName || legacyLabelAsName;
+					if (effectiveFieldId && typeof JFCustomWidget.getFieldsValueById === "function") {
+						JFCustomWidget.getFieldsValueById([String(effectiveFieldId)], applyResponse);
+					}
+					var nameArr = [];
+					if (effectiveFieldName) nameArr.push(effectiveFieldName);
+					nameArr.push(legacyLabelAsName);
+					JFCustomWidget.getFieldsValueByName(nameArr, applyResponse);
+				}
+
+				function attachLiveListener() {
+					if (!effectiveFieldId || typeof JFCustomWidget.listenFromField !== "function") return;
+					var inputRef = "input_" + String(effectiveFieldId);
+					function onVal(value) {
+						hiddenEmailValue = value != null ? String(value) : "";
+						updateReviewArea();
+					}
+					try {
+						JFCustomWidget.listenFromField(inputRef, "change", onVal);
+						JFCustomWidget.listenFromField(inputRef, "keyup", onVal);
+					} catch (e) {
+						console.warn("listenFromField failed:", e);
+					}
+				}
+
+				function resolveConfig(formData) {
+					var sid = getSetting("SourceFieldId") || getQueryParam("SourceFieldId");
+					var sname = getSetting("SourceFieldName") || getQueryParam("SourceFieldName");
+					legacyLabelAsName =
+						getSetting("LegacyFieldName") || getQueryParam("LegacyFieldName") || "hiddenemail";
+
+					var noAuto =
+						getSetting("NoAutoNextField") === "1" || getQueryParam("NoAutoNextField") === "1";
+
+					var qid = formData && (formData.qid != null ? formData.qid : formData.questionID);
+					if ((qid === undefined || qid === null || qid === "") && getQueryParam("qid")) {
+						qid = getQueryParam("qid");
+					}
+					var qn = parseInt(String(qid), 10);
+
+					effectiveFieldId = sid;
+					effectiveFieldName = sname;
+
+					if (!effectiveFieldId && !effectiveFieldName && !noAuto && !isNaN(qn)) {
+						effectiveFieldId = String(qn + 1);
+					}
+
+					console.log(
+						"getsetdata2 config — effectiveFieldId:",
+						effectiveFieldId || "(none)",
+						"name:",
+						effectiveFieldName || legacyLabelAsName,
+						"widget qid:",
+						qid,
+					);
+				}
+
+				function getHiddenEmailFromForm() {
+					fetchFieldValue();
+					setTimeout(fetchFieldValue, 120);
+					setTimeout(fetchFieldValue, 400);
+					setTimeout(fetchFieldValue, 1200);
+				}
+
+				function init(formData) {
+					resolveConfig(formData || {});
+					getHiddenEmailFromForm();
+					attachLiveListener();
+				}
+
+				function getData() {
+					return {
+						valid: true,
+						value: hiddenEmailValue,
+					};
+				}
+			}
+
+			JFCustomWidget.subscribe("ready", function (data) {
+				var widget = new tableExampleForCleaningDepot();
+				widget.init(data);
+
+				JFCustomWidget.subscribe("submit", function () {
+					JFCustomWidget.sendSubmit(widget.getData());
+				});
+			});
+		</script>
+	</body>
+</html>
