@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+	<head>
+		<script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
+		<meta http-equiv="cache-control" content="no-cache" />
+		<meta http-equiv="expires" content="0" />
+		<meta http-equiv="pragma" content="no-cache" />
+	</head>
+	<style></style>
+	<body>
+		<div id="reviewArea"></div>
+		<script type="text/javascript">
+			function tableExampleForCleaningDepot() {
+				this.init = init;
+				this.getData = getData;
+
+				function getFieldsByX() {
+					JFCustomWidget.getFieldsValueByName(["q9_email"], function (res) {
+						var el = document.getElementById("iframeEmail");
+						if (!el) return;
+						var raw = res && res.q9_email;
+						var str =
+							raw == null
+								? ""
+								: typeof raw === "string"
+									? raw
+									: typeof raw === "object" && raw.value != null
+										? String(raw.value)
+										: String(raw);
+						el.value = str;
+					});
+				}
+
+				function init(formData) {
+					console.log("Hello world!2");
+					getFieldsByX();
+				}
+
+				function getData() {
+					return {
+						valid: true,
+						value: "TEST",
+					};
+				}
+			}
+
+			JFCustomWidget.subscribe("ready", function (data) {
+				var widget = new tableExampleForCleaningDepot();
+				widget.init(data);
+
+				JFCustomWidget.subscribe("submit", function () {
+					JFCustomWidget.sendSubmit(widget.getData());
+				});
+			});
+		</script>
+        <input type="text" id="iframeEmail" placeholder="Enter email" value="">
+	</body>
+</html>
