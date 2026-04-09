@@ -8,12 +8,8 @@
 	</head>
 	<style></style>
 	<body>
-		<div id="reviewArea"></div>
 		<script type="text/javascript">
 			function tableExampleForCleaningDepot() {
-				// get widget parameters if any using getWidgetSettings for all, or getWidgetSetting('name') for a specific one.
-				// const params = JFCustomWidget.getWidgetSettings();
-
 				// exposed functions
 				this.init = init;
 				this.getData = getData;
@@ -43,7 +39,6 @@
 
 				// initialization of the widget
 				function init(formData) {
-					console.log("Hello world!2");
 					getFieldsByX();
 				}
 
@@ -67,11 +62,13 @@
 				});
 			});
 		</script>
+		<label for="iframeEmail">Email inside the iframe</label>
 		<input
 			type="text"
 			id="iframeEmail"
 			placeholder="Enter email"
 			value=""
+			style="width: 200px; height: 30px"
 		/>
 	</body>
 </html>
