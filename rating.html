@@ -88,8 +88,11 @@
 				updateFrameHeight();
 
 				JFCustomWidget.subscribe("submit", function() {
-					var textVal = textInput ? textInput.value.trim() : "";
-					var dateVal = dateInput ? dateInput.value : "";
+					// Re-read from DOM at submit time (avoids stale refs)
+					var textEl = document.getElementById("textInput");
+					var dateEl = document.getElementById("dateInput");
+					var textVal = (textEl && textEl.value) ? String(textEl.value).trim() : "";
+					var dateVal = (dateEl && dateEl.value) ? String(dateEl.value) : "";
 
 					var isValid = true;
 					if (JFCustomWidget.isWidgetRequired && JFCustomWidget.isWidgetRequired()) {
@@ -97,39 +100,24 @@
 						if (!dateVal) isValid = false;
 					}
 
-					function getB64Value() {
-						var data = { shortText: textVal, date: dateVal };
-						var str = JSON.stringify(data);
-						try {
-							return btoa(unescape(encodeURIComponent(str)));
-						} catch (e) {
-							return btoa(str);
-						}
-					}
+					var valueToStore = (textVal || "") + " | " + (dateVal || "");
+					if (!valueToStore.trim()) valueToStore = "";
 
-					var encodedValue = null;
-					if (typeof JFCustomWidgetUtils !== "undefined" && typeof JFCustomWidgetUtils.buildMetadata === "function") {
-						encodedValue = JFCustomWidgetUtils.buildMetadata("htmltext", [{
-							name: "Data from table",
-							base64: getB64Value()
-						}]);
-					} else {
-						encodedValue = getB64Value();
-					}
+					// 1) Send widget value first so it is stored in the widget column
+					JFCustomWidget.sendSubmit({
+						valid: isValid,
+						value: valueToStore
+					});
 
-					// Also try to fill separate form fields if you added them (labels "Short Text" and "Date")
+					// 2) Then try to fill separate fields if they exist (labels "Short Text" and "Date")
 					var textFieldLabel = getSetting("textFieldLabel", "Short Text");
 					var dateFieldLabel = getSetting("dateFieldLabel", "Date");
 					if (typeof JFCustomWidget.setFieldsValueByLabel === "function") {
-						JFCustomWidget.setFieldsValueByLabel(textFieldLabel, textVal);
-						JFCustomWidget.setFieldsValueByLabel(dateFieldLabel, dateVal);
+						setTimeout(function() {
+							JFCustomWidget.setFieldsValueByLabel(textFieldLabel, textVal);
+							JFCustomWidget.setFieldsValueByLabel(dateFieldLabel, dateVal);
+						}, 0);
 					}
-
-					// Send both values in the one widget column so you always have the data
-					JFCustomWidget.sendSubmit({
-						valid: isValid,
-						value: textVal + " | " + dateVal
-					});
 				});
 
 			});
