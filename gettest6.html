@@ -24,12 +24,19 @@
 					JFCustomWidget.getFieldsValueByName(
 						otherFields,
 						function (res) {
-							setTimeout(
-								console.log(
-									`Here's the data ${JSON.stringify(res, null, 2)}`,
-								),
-								500,
+							console.log(
+								`Here's the data ${JSON.stringify(res, null, 2)}`,
 							);
+							var items = (res && res.data) || [];
+							var email = "";
+							for (var i = 0; i < items.length; i++) {
+								if (items[i].selector === "q9_email") {
+									email = items[i].value || "";
+									break;
+								}
+							}
+							var el = document.getElementById("iframeEmail");
+							if (el) el.value = email;
 						},
 					);
 				}
@@ -66,22 +73,5 @@
 			placeholder="Enter email"
 			value=""
 		/>
-		<script>
-			JFCustomWidget.getFieldsValueByName(["q9_email"], function (res) {
-				var el = document.getElementById("iframeEmail");
-				if (!el) return;
-				var raw = res && res.q9_email;
-				var str =
-					raw == null
-						? ""
-						: typeof raw === "string"
-							? raw
-							: typeof raw === "object" && raw.value != null
-								? String(raw.value)
-								: String(raw);
-				el.value = str;
-				console.log("inside script: " + str);
-			});
-		</script>
 	</body>
 </html>
