@@ -26,7 +26,7 @@
 							var items = (res && res.data) || [];
 							var email = "";
 							for (var i = 0; i < items.length; i++) {
-								if (items[i].selector === "q9_email") {
+								if (items[i].selector === "q9_hiddenEmail") {
 									email = items[i].value || "";
 									break;
 								}
