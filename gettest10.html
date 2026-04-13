@@ -1,0 +1,419 @@
+<!doctype html>
+<html>
+	<head>
+		<script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
+		<meta http-equiv="cache-control" content="no-cache" />
+		<meta http-equiv="expires" content="0" />
+		<meta http-equiv="pragma" content="no-cache" />
+	</head>
+	<style>
+		body {
+			font-family: system-ui, sans-serif;
+			font-size: 14px;
+		}
+		.row {
+			margin-bottom: 10px;
+		}
+		label {
+			display: block;
+			margin-bottom: 4px;
+		}
+		select,
+		input[type="text"] {
+			width: 100%;
+			max-width: 320px;
+			height: 32px;
+			box-sizing: border-box;
+		}
+		.hint {
+			font-size: 12px;
+			color: #555;
+			max-width: 320px;
+			margin-top: 4px;
+		}
+	</style>
+	<body>
+		<div class="row">
+			<label for="fieldPicker">Form field to mirror</label>
+			<select id="fieldPicker">
+				<option value="">— Loading fields… —</option>
+			</select>
+			<p class="hint" id="fieldHint"></p>
+		</div>
+		<div class="row">
+			<label for="iframeEmail">Value (from selected field)</label>
+			<input
+				type="text"
+				id="iframeEmail"
+				placeholder="Pick a field above"
+				value=""
+				readonly
+			/>
+		</div>
+
+		<script type="text/javascript">
+			function tableExampleForCleaningDepot() {
+				this.init = init;
+				this.getData = getData;
+
+				var fieldDescriptors = [];
+				var selectedFieldName = "";
+				var storageKey = "";
+				var liveBound = "";
+
+				function getSetting(key) {
+					if (typeof JFCustomWidget.getWidgetSetting !== "function")
+						return "";
+					var v = JFCustomWidget.getWidgetSetting(key);
+					return v == null ? "" : String(v).trim();
+				}
+
+				function getQueryParam(key) {
+					if (typeof JFCustomWidget.getQueryString !== "function")
+						return "";
+					var v = JFCustomWidget.getQueryString(key);
+					return v == null ? "" : String(v).trim();
+				}
+
+				function qidFromFieldName(name) {
+					var m = /^q(\d+)_/.exec(name || "");
+					return m ? m[1] : "";
+				}
+
+				function addField(name, label) {
+					if (!name || !/^q\d+_/.test(name)) return;
+					for (var i = 0; i < fieldDescriptors.length; i++) {
+						if (fieldDescriptors[i].name === name) return;
+					}
+					fieldDescriptors.push({
+						name: name,
+						label: label || name,
+						qid: qidFromFieldName(name),
+					});
+				}
+
+				function parseFieldNamesParam(raw) {
+					if (!raw) return;
+					var parts = raw.split(",");
+					for (var p = 0; p < parts.length; p++) {
+						var part = parts[p].trim();
+						if (!part) continue;
+						var pipe = part.indexOf("|");
+						if (pipe >= 0) {
+							addField(
+								part.slice(0, pipe).trim(),
+								part.slice(pipe + 1).trim(),
+							);
+						} else {
+							addField(part, part);
+						}
+					}
+				}
+
+				function collectFromUnknown(obj, depth) {
+					if (!obj || depth > 4) return;
+					if (Array.isArray(obj)) {
+						for (var i = 0; i < obj.length; i++) {
+							var item = obj[i];
+							if (item && typeof item === "object") {
+								var nm =
+									item.name ||
+									item.fieldName ||
+									item.selector ||
+									item.qname ||
+									item.field;
+								var lb =
+									item.text ||
+									item.label ||
+									item.caption ||
+									nm;
+								if (nm && /^q\d+_/.test(String(nm))) {
+									addField(
+										String(nm),
+										lb ? String(lb) : String(nm),
+									);
+								}
+								collectFromUnknown(item, depth + 1);
+							}
+						}
+						return;
+					}
+					if (typeof obj !== "object") return;
+					for (var k in obj) {
+						if (!Object.prototype.hasOwnProperty.call(obj, k))
+							continue;
+						var v = obj[k];
+						if (
+							k === "fields" ||
+							k === "questions" ||
+							k === "components" ||
+							k === "fieldList" ||
+							k === "formFields"
+						) {
+							collectFromUnknown(v, depth + 1);
+						} else if (depth < 2 && v && typeof v === "object") {
+							collectFromUnknown(v, depth + 1);
+						}
+					}
+				}
+
+				function normalizeEntry(entry) {
+					if (entry == null) return "";
+					if (typeof entry === "string") return entry;
+					if (typeof entry === "number" || typeof entry === "boolean")
+						return String(entry);
+					if (
+						typeof entry === "object" &&
+						"value" in entry &&
+						entry.value != null
+					) {
+						return String(entry.value);
+					}
+					return "";
+				}
+
+				function valueFromResponse(res, fieldName) {
+					if (!res || !fieldName) return "";
+					var data = res.data;
+
+					if (Array.isArray(data)) {
+						for (var i = 0; i < data.length; i++) {
+							var row = data[i];
+							if (
+								row &&
+								(row.selector === fieldName ||
+									row.name === fieldName)
+							) {
+								return row.value != null
+									? String(row.value)
+									: "";
+							}
+						}
+						return "";
+					}
+
+					if (typeof data === "string") {
+						try {
+							var parsed = JSON.parse(data);
+							return valueFromResponse(
+								{ data: parsed },
+								fieldName,
+							);
+						} catch (e) {
+							return "";
+						}
+					}
+
+					if (data && typeof data === "object") {
+						if (data[fieldName] != null)
+							return normalizeEntry(data[fieldName]);
+						var qid = qidFromFieldName(fieldName);
+						if (qid) {
+							var tryKeys = ["input_" + qid, qid];
+							for (var t = 0; t < tryKeys.length; t++) {
+								if (data[tryKeys[t]] != null)
+									return normalizeEntry(data[tryKeys[t]]);
+							}
+						}
+						for (var k in data) {
+							if (!Object.prototype.hasOwnProperty.call(data, k))
+								continue;
+							if (k === fieldName) return normalizeEntry(data[k]);
+						}
+					}
+
+					if (res[fieldName] != null)
+						return normalizeEntry(res[fieldName]);
+					if (typeof res.value !== "undefined" && res.value != null)
+						return String(res.value);
+
+					return "";
+				}
+
+				function setMirroredValue(text) {
+					var el = document.getElementById("iframeEmail");
+					if (el) el.value = text != null ? String(text) : "";
+				}
+
+				function fetchSelectedField() {
+					if (!selectedFieldName) return;
+					JFCustomWidget.getFieldsValueByName(
+						[selectedFieldName],
+						function (res) {
+							console.log(
+								"getFieldsValueByName",
+								selectedFieldName,
+								res,
+							);
+							setMirroredValue(
+								valueFromResponse(res, selectedFieldName),
+							);
+						},
+					);
+				}
+
+				function attachLiveListener(fieldName) {
+					var qid = qidFromFieldName(fieldName);
+					if (
+						!qid ||
+						typeof JFCustomWidget.listenFromField !== "function"
+					)
+						return;
+					if (liveBound === fieldName) return;
+					liveBound = fieldName;
+					var inputRef = "input_" + qid;
+					function onVal(val) {
+						if (fieldName !== selectedFieldName) return;
+						setMirroredValue(val != null ? String(val) : "");
+					}
+					try {
+						JFCustomWidget.listenFromField(
+							inputRef,
+							"change",
+							onVal,
+						);
+						JFCustomWidget.listenFromField(
+							inputRef,
+							"keyup",
+							onVal,
+						);
+					} catch (e) {
+						console.warn("listenFromField:", e);
+					}
+				}
+
+				function persistSelection() {
+					try {
+						if (storageKey && selectedFieldName) {
+							localStorage.setItem(storageKey, selectedFieldName);
+						}
+					} catch (e) {}
+				}
+
+				function restoreSelection() {
+					try {
+						if (!storageKey) return "";
+						return localStorage.getItem(storageKey) || "";
+					} catch (e) {
+						return "";
+					}
+				}
+
+				function renderDropdown() {
+					var sel = document.getElementById("fieldPicker");
+					var hint = document.getElementById("fieldHint");
+					if (!sel) return;
+
+					fieldDescriptors.sort(function (a, b) {
+						return a.label.localeCompare(b.label, undefined, {
+							sensitivity: "base",
+						});
+					});
+
+					sel.innerHTML = "";
+					var placeholder = document.createElement("option");
+					placeholder.value = "";
+					placeholder.textContent =
+						fieldDescriptors.length === 0
+							? "— No fields found — add FieldNames widget param —"
+							: "— Select a form field —";
+					sel.appendChild(placeholder);
+
+					for (var i = 0; i < fieldDescriptors.length; i++) {
+						var d = fieldDescriptors[i];
+						var opt = document.createElement("option");
+						opt.value = d.name;
+						opt.textContent = d.label + " (" + d.name + ")";
+						sel.appendChild(opt);
+					}
+
+					if (hint) {
+						hint.textContent =
+							fieldDescriptors.length === 0
+								? "Set widget parameter FieldNames (or URL ?FieldNames=) to a comma-separated list, e.g. q9_hiddenEmail,q8_name. Optional labels: q9_hiddenEmail|Email,q8_name|Name."
+								: "";
+					}
+
+					var saved = restoreSelection();
+					if (
+						saved &&
+						fieldDescriptors.some(function (d) {
+							return d.name === saved;
+						})
+					) {
+						sel.value = saved;
+						selectedFieldName = saved;
+					}
+
+					sel.onchange = function () {
+						selectedFieldName = sel.value || "";
+						liveBound = "";
+						persistSelection();
+						fetchSelectedField();
+						attachLiveListener(selectedFieldName);
+					};
+
+					if (selectedFieldName) {
+						fetchSelectedField();
+						attachLiveListener(selectedFieldName);
+					}
+				}
+
+				function tryFrameData() {
+					if (typeof JFCustomWidget.getFrameData !== "function")
+						return;
+					try {
+						JFCustomWidget.getFrameData(function (res) {
+							console.log("getFrameData", res);
+							collectFromUnknown(res, 0);
+							renderDropdown();
+						});
+					} catch (e) {
+						console.warn("getFrameData failed", e);
+					}
+				}
+
+				function init(formData) {
+					formData = formData || {};
+					var formId =
+						formData.formID != null
+							? String(formData.formID)
+							: getQueryParam("formID");
+					storageKey = formId
+						? "jf_gettest9_field_" + formId
+						: "jf_gettest9_field";
+
+					parseFieldNamesParam(
+						getSetting("FieldNames") || getQueryParam("FieldNames"),
+					);
+
+					collectFromUnknown(formData, 0);
+
+					tryFrameData();
+
+					renderDropdown();
+
+					setTimeout(fetchSelectedField, 200);
+					setTimeout(fetchSelectedField, 600);
+				}
+
+				function getData() {
+					var el = document.getElementById("iframeEmail");
+					return {
+						valid: true,
+						value: el ? el.value : "",
+					};
+				}
+			}
+
+			JFCustomWidget.subscribe("ready", function (data) {
+				var widget = new tableExampleForCleaningDepot();
+				widget.init(data);
+
+				JFCustomWidget.subscribe("submit", function () {
+					JFCustomWidget.sendSubmit(widget.getData());
+				});
+			});
+		</script>
+	</body>
+</html>
